@@ -11,11 +11,21 @@ from rich.table import Table
 from rich.theme import Theme
 
 
+def clearscreen():
+    system_type = platform.system()
+    if system_type == "Windows":
+        os.system("cls")
+    if system_type == "Linux":
+        os.system("clear")
+
+
 class App:
 
     def __init__(self):
+        # {'used': 0, 'default_target_lang': 'zh-cn', 'tts': False}
         self.configfile = open("./config.pkl", "rb")
         self.userconfig = pickle.load(self.configfile)
+        self.configfile.close()
         self.LANGUAGE_CODE_LIST = []
         self.THEME = Theme({
             "input": "#00FF00 italic bold",
@@ -26,34 +36,101 @@ class App:
         try:
             self.LANGUAGES = googletrans.LANGUAGES
         except ConnectionError:
-            self.console.print("Internet error! [instruction]Check your Network[/instruction]", style="error")
+            self.console.print(
+                "Internet error! [instruction]Check your Network[/instruction]",
+                style="error")
             sys.exit(0)
-
         self.entrance()
 
-    def config(self):
+    def config_entrance(self):
         md = Markdown("# Thanks for choosing this software!")
         self.console.print(md)
-        self.console.print("For it's you [error]FIRST[/error] time to use this software", style="instruction")
-        self.console.print("Here are some questions to ask you for a better personal using experience",
-                           style="instruction")
-        self.console.print("If you want just keeping the default value, just press [error]ENTER[/error] to ignore",
-                           style="instruction")
-        self.console.print("Do you want go to continue(Y/n): ",style="input",end="")
-        self.console.input()
-        while True:
+        self.console.print(
+            "For it's you [error]FIRST[/error] time to use this software",
+            style="instruction")
+        self.console.print(
+            "Here are some questions to ask you for a better personal using experience",
+            style="instruction")
+        self.console.print(
+            "If you want just keeping the default value, just press [error]ENTER[/error] to ignore",
+            style="instruction")
+        self.console.print("Do you want go to continue(Y/n): ", style="input",
+                           end="")
+        con = self.console.input()
+        if con == "Y" or con == "y":
+            self.config()
+        else:
+            self.mainloop()
+
+    def tip(self):
+        markd = """
+# Some Tips
+
++ Use a blank line to end input
++ You can use {setting} to change the setting when using the software since now.
++ You can (NOT MUST) add {"tar"=xx,"tts"=True/False} at the end of input to configure.(tar refers to target and tts 
+refers to the audio file)
++ You can use {tips} to show the tips
+        """
+        md = Markdown(markd)
+        self.console.print(md)
+
+    def config(self):
+        try:
+            f = open("./config.pkl", "rb")
+            self.userconfig = pickle.load(f)
+            f.close()
             self.show_language_code_table()
-            self.console.print(
-                "Set the [error]DEFAULT TARGET LANGUAGE[/error]: ",
-                style="input",
-                end="")
-            dtl = self.console.input()
-            if dtl in self.LANGUAGE_CODE_LIST:
+            while True:
                 self.console.print(
-                    f"[error]DEFAULT TARGET LANGUAGE[/error] has been set as[error]{dtl}[/error] successfully")
-                break
+                    "Set the [error]DEFAULT TARGET LANGUAGE[/error]: ",
+                    style="input",
+                    end="")
+                dtl = self.console.input()
+                if dtl in self.LANGUAGE_CODE_LIST:
+                    self.userconfig["default_target_lang"] = dtl
+                    self.console.print(
+                        f"[error]DEFAULT TARGET LANGUAGE[/error] has been set as[error]{dtl}[/error] successfully")
+                    break
+                else:
+                    self.console.print(
+                        f"[error]{dtl}[/error] is not in the language code list, input aging")
+            self.console.print(
+                "Do you want to download the pronunciation everytime?(Y/n)", style="input")
+            pro = self.console.input()
+            if pro == "Y":
+                self.userconfig["tts"] = True
             else:
-                self.console.print(f"[error]{dtl}[/error] is not in the langguage code list, input aging")
+                self.userconfig["tts"] = False
+
+            self.userconfig["used"] = 1
+            f = open("./config.pkl", "wb")
+            pickle.dump(self.userconfig, f)
+            f.close()
+            clearscreen()
+            self.console.print(Markdown("# Setting Successfully"))
+            self.console.print(Markdown("+ default_target_language: " + self.userconfig["default_target_lang"]))
+            if self.userconfig["tts"]:
+                a = "True"
+            else:
+                a = "False"
+            self.console.print(Markdown("+ download_tts: " + a))
+            self.console.print("You can use the software freely now!", style="instruction")
+
+            self.console.print("Press any key to continue", style="input")
+            self.console.input()
+            self.tip()
+            self.hr()
+            self.mainloop()
+        except KeyboardInterrupt:
+            self.console.print(
+                "Do you really want to QUIT(Y/[instruction]n[/instruction])",
+                style="error")
+            q = self.console.input()
+            if q == "Y" or q == "y":
+                sys.exit(0)
+            else:
+                self.config()
 
     def show_language_code_table(self):
         table = Table(title="Language Code List")
@@ -65,11 +142,7 @@ class App:
         f = open("languageCodeList.pkl", "wb")
         pickle.dump(self.LANGUAGE_CODE_LIST, f)
         f.close()
-        system_type = platform.system()
-        if system_type == "Windows":
-            os.system("cls")
-        if system_type == "Linux":
-            os.system("clear")
+        clearscreen()
         self.console.print(table)
 
     def get_language_code_list(self):
@@ -79,7 +152,7 @@ class App:
 
     def entrance(self):
         if self.userconfig["used"] == 0:
-            self.config()
+            self.config_entrance()
         else:
             self.get_language_code_list()
             self.mainloop()
@@ -102,7 +175,9 @@ class App:
                     else:
                         words.append(source)
             except ConnectionError:
-                self.console.print("Internet error! [instruction]Check your Network[/instruction]", style="error")
+                self.console.print(
+                    "Internet error! [instruction]Check your Network[/instruction]",
+                    style="error")
                 self.console.print("\n")
                 continue
 
@@ -112,6 +187,7 @@ if __name__ == "__main__":
         App()
     except KeyboardInterrupt:
         console = Console()
-        console.print("You Interrupt the programme!", style="#FFFF00 italic bold")
+        console.print("You Interrupt the programme!",
+                      style="#FFFF00 italic bold")
         console.print("\n")
         sys.exit(0)
