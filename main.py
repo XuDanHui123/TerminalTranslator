@@ -39,25 +39,30 @@ class App:
                            style="instruction")
         self.console.print("If you want just keeping the default value, just press [error]ENTER[/error] to ignore",
                            style="instruction")
-        self.console.print(
-            "Set the [error]DEFAULT TARGET LANGUAGE[/error]"
-            "([instruction]type {langs} to show the language list[/instruction]): ",
-            style="input",
-            end="")
-        dtl = self.console.input()
-        if dtl != "{langs}":
-            pass
-        else:
+        while True:
+            self.show_language_code_table()
             self.console.print(
-                "TIPS: You can use {langs} to check the Language Code everywhere in this software since now")
+                "Set the [error]DEFAULT TARGET LANGUAGE[/error]: ",
+                style="input",
+                end="")
+            dtl = self.console.input()
+            if dtl in self.LANGUAGE_CODE_LIST:
+                self.console.print(
+                    f"[error]DEFAULT TARGET LANGUAGE[/error] has been set as[error]{dtl}[/error] successfully")
+                break
+            else:
+                self.console.print(f"[error]{dtl}[/error] is not in the langguage code list, input aging")
 
-    def language_code(self):
+    def show_language_code_table(self):
         table = Table(title="Language Code List")
         table.add_column("Language Name", style='#00FF00')
         table.add_column("Language Code", style='#FFFF00')
         for i in self.LANGUAGES:
             table.add_row(self.LANGUAGES[i], i)
             self.LANGUAGE_CODE_LIST.append(i)
+        f = open("languageCodeList.pkl", "wb")
+        pickle.dump(self.LANGUAGE_CODE_LIST, f)
+        f.close()
         system_type = platform.system()
         if system_type == "Windows":
             os.system("cls")
@@ -65,15 +70,16 @@ class App:
             os.system("clear")
         self.console.print(table)
 
-    def make_language_code_list(self):
-        for i in self.LANGUAGES:
-            self.LANGUAGE_CODE_LIST.append(i)
+    def get_language_code_list(self):
+        f = open("./languageCodeList.pkl", "rb")
+        self.LANGUAGE_CODE_LIST = pickle.load(f)
+        f.close()
 
     def entrance(self):
         if self.userconfig["used"] == 0:
             self.config()
         else:
-            self.make_language_code_list()
+            self.get_language_code_list()
             self.mainloop()
 
     def hr(self):
