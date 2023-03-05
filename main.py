@@ -39,6 +39,8 @@ class App:
                            style="instruction")
         self.console.print("If you want just keeping the default value, just press [error]ENTER[/error] to ignore",
                            style="instruction")
+        self.console.print("Do you want go to continue(Y/n): ",style="input",end="")
+        self.console.input()
         while True:
             self.show_language_code_table()
             self.console.print(
